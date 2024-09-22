@@ -1,12 +1,22 @@
 {
+  "name": "le-chess-backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.ts",
+  "scripts": {
+    "start": "ts-node index.ts",
+    "build": "rimraf ./dist && tsc",
+    "dev": "tsc && node ./dist/index.js"
+  },
   "devDependencies": {
+    "@types/express": "^4.17.21",
     "@types/node": "^22.5.5",
+    "@types/socket.io": "^3.0.1",
+    "rimraf": "^6.0.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.6.2"
   },
   "dependencies": {
-    "@types/express": "^4.17.21",
-    "@types/socket.io": "^3.0.1",
     "cors": "^2.8.5",
     "express": "^4.21.0",
     "socket.io": "^4.7.5"
