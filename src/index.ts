@@ -117,7 +117,6 @@ io.on('connection', (socket) => {
   socket.on('message', (message) => {
     console.log(typeof message);
     console.log('message received:', message);
-    console.log('silly change')
     io.emit('message', message);
   });
 
