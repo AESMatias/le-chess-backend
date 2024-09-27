@@ -41,6 +41,8 @@ interface GameData {
   blackPlayer: Player | null;
   currentTurn: 'White' | 'Black';
   currentCounter: number;
+  currentCastlingWhite: number;
+  currentCastlingBlack: number;
 }
 
 app.get('/', (req, res) => {
@@ -68,6 +70,8 @@ io.on('connection', (socket) => {
         blackPlayer: null,
         currentTurn: 'White',
         currentCounter: 0,
+        currentCastlingWhite: 0,
+        currentCastlingBlack: 0,
       };
 
       let currentCounter = games[socket.id].currentCounter
@@ -83,7 +87,8 @@ io.on('connection', (socket) => {
       // games[socket.id]['blackPlayer'] = null;
       // games[socket.id]['currentTurn'] = 'White';
       console.log(`Socker number ${Object.keys(games).length} connected!`);
-    } 
+    }
+
     else {
 
       const myBlackPlayer:Player = {
@@ -142,35 +147,76 @@ io.on('connection', (socket) => {
 
   socket.on('RequestMove', (row, col, piece) => {
     const firstGameId = Object.keys(games)[0];
-    console.log('Move received:', row, col, piece);
+    console.log('Move received:', row, col, 'piece:',piece);
     
     let processedBoard: string[][] | undefined;
     let isMate: boolean = false;
+    let movToDoRook: any = null;
+    let movToDoKing: any = null;
     const boardWithoutMove = games[firstGameId].board;
+    const pieceColor = piece.piece.split('_')[0];
+    const whiteCastlingCount = games[firstGameId].currentCastlingWhite;
+    const blackCastlingCount = games[firstGameId].currentCastlingBlack;
+    let isCurrentValidMov = true; //TODO: Do es not validate anything, isn't doing it?
 
 
     const result = handleMovement(piece, row, col, games[firstGameId].board, games[firstGameId].currentTurn);
 
-    if (result) {
-        processedBoard = result.processedBoard;
-        isMate = result.isMate || false;
-      
-        const resultEarly = checkMateEarly(processedBoard, isMate);
-        if (resultEarly.winner.length > 2) {
-          io.emit('currentBoard', boardWithoutMove, games[firstGameId].currentTurn, isMate);
-          io.emit('checkMate', resultEarly.winner);
-          io.close();
-          return;
-        }
 
-      } else {
-        console.error('Movement is invalid or undefined');
-        return;
+    if (!(result)) {
+      console.error('Movement is invalid or undefined');
+      return;
+    }
+    movToDoRook = result.movToDo;
+    movToDoKing = result.kingMovTo;
+
+    processedBoard = result.processedBoard;
+    isMate = result.isMate || false;
+    const { castlingCounter } = result;
+
+    if (castlingCounter === 1 && pieceColor === 'Black') { 
+
+      //If the catlingCounter is 1, then the castling is valid. TODO: change this to a boolean, it's easy
+      games[firstGameId].currentCastlingBlack = castlingCounter;
+
+      if (blackCastlingCount > 1) {
+        console.error('Black has already castled');
+        isCurrentValidMov = false;
       }
 
+    }
 
+    if (castlingCounter === 1 && pieceColor === 'White') {
+
+      games[firstGameId].currentCastlingWhite = castlingCounter;
+      if (whiteCastlingCount > 1) {
+        console.error('White has already castled');
+        isCurrentValidMov = false;
+      }
+    }
+
+    //If the mov is Castling and has been already done, then it's invalid:
+    if (isCurrentValidMov === false) {
+      console.error('Invalid movement, castling has been already done');
+      return;
+    }
+
+    const resultEarly = checkMateEarly(processedBoard, isMate);
+
+    if (resultEarly.winner.length > 2) {
+      io.emit('currentBoard', boardWithoutMove, games[firstGameId].currentTurn, isMate);
+      io.emit('checkMate', resultEarly.winner);
+      io.close();
+      return;
+    }
+
+  
     games[firstGameId].currentTurn = games[firstGameId].currentTurn === 'White' ? 'Black' : 'White';
     io.emit('currentBoard', processedBoard, games[firstGameId].currentTurn);
+
+    // if (movToDoRook !== null && movToDoKing !== null) {
+    //   io.emit('currentBoard', processedBoard, games[firstGameId].currentTu
+    // }
 
     if (isMate) {
       io.emit('currentBoard', boardWithoutMove, games[firstGameId].currentTurn, isMate);

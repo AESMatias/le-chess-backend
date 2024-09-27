@@ -2,14 +2,11 @@ import { MovementIsValid } from './MovementIsValid';
 import { checkKingsPositions } from './kingPositions';
 import { isInDanger } from './isInDanger';
 import { isCheckMate } from './checkIsCheckMate';
+import { caseCastling } from './caseCastling'
+import { pieceObjectType } from './Types'
 
-type Piece = {
-    piece: string;
-    row: number;
-    col: number;
-};
 
-export const handleMovement = (pieceObject: Piece, row: number, col: number,
+export const handleMovement = (pieceObject: pieceObjectType, row: number, col: number,
    board:string[][], whoGoes:string) => {
 
     const draggedPiece = pieceObject;
@@ -26,6 +23,9 @@ export const handleMovement = (pieceObject: Piece, row: number, col: number,
     let kingWhiteRow = kingsPositions.kingWhitePos.row;
     let kingWhiteCol = kingsPositions.kingWhitePos.col;
 
+    let castlingCounter = 0;
+    let kingMovTo = null;
+    let rookMovTo = null;
 
     // if (kingWhiteCol === -1 || kingWhiteRow === -1) {
     //   console.log('CheckMate: King White not found');
@@ -37,11 +37,18 @@ export const handleMovement = (pieceObject: Piece, row: number, col: number,
     //   return {processedBoard: board, isMate: true, winner: 'White'};
     // }
 
-    const isValid = MovementIsValid(board, draggedPiece.piece,
-       {row: draggedPiece.row, col: draggedPiece.col}, {row, col});
+    const {isValid, castlingEvent, movToDo, kingTo} = MovementIsValid(board,
+       draggedPiece.piece,
+       {row: draggedPiece.row, col: draggedPiece.col},
+       {row, col},
+       pieceObject);
+
+    kingMovTo = kingTo;
+    rookMovTo = movToDo
+
 
     if (draggedPiece.row === row && draggedPiece.col === col) {
-      return {processedBoard: board, isMate: false, winner: ''};
+      return {processedBoard: board, isMate: false, winner: '', castlingCounter, movToDo, kingMovTo: null};
     }
 
     if (draggedPiece && isValid) {
@@ -51,15 +58,16 @@ export const handleMovement = (pieceObject: Piece, row: number, col: number,
       let kingBlackDanger = false;
 
       if (whoGoes !== pieceColor) { //TODO: Legitimize to admit the user only moves his pieces
+        console.log('whoGoes:', whoGoes, 'pieceColor:', pieceColor);
         console.log('You cannot move the other player pieces');
-        return {processedBoard: board, isMate: false, winner: ''};
+        return {processedBoard: board, isMate: false, winner: '', castlingCounter, movToDo, kingMovTo: null};
       }
   
       //We need to update the position of the king after each movement
       if (draggedPiece.piece === 'White_King') {
         kingWhiteRow = row;
         kingWhiteCol = col;
-        const returnedDanger = isInDanger(board, 'White_King', {row, col});
+        const returnedDanger = isInDanger(board, 'White_King', {row, col}, pieceObject);
         kingWhiteDanger = returnedDanger.inDanger;
 
 
@@ -68,7 +76,7 @@ export const handleMovement = (pieceObject: Piece, row: number, col: number,
         
         if (kingWhiteDanger) {
           console.error('Check! White King in danger');
-          return {processedBoard: board, isMate: false, winner: 'Black'};
+          return {processedBoard: board, isMate: false, winner: 'Black', castlingCounter, movToDo, kingMovTo: null};
         }
         // setKingWhitePos({ row, col, piece: 'White_King' }); 
         kingWhitePos = { row, col, piece: 'White_King' };
@@ -77,20 +85,20 @@ export const handleMovement = (pieceObject: Piece, row: number, col: number,
       if (draggedPiece.piece === 'Black_King') {
         kingBlackRow = row;
         kingBlackCol = col;
-        const returnedDanger = isInDanger(board, 'Black_King', {row, col});
+        const returnedDanger = isInDanger(board, 'Black_King', {row, col}, pieceObject);
         kingBlackDanger = returnedDanger.inDanger;
 
         if (kingBlackDanger) {
           console.error('Check! Black King in danger');
-          return {processedBoard: board, isMate: false, winner: 'White'};
+          return {processedBoard: board, isMate: false, winner: 'White', castlingCounter, movToDo, kingMovTo: null};
         }
         // setKingBlackPos({ row, col, piece: 'Black_King' }); 
         kingBlackPos = { row, col, piece: 'Black_King' };
       }
     
       if (draggedPiece.piece.split('_')[1] !== 'King') {
-      const returnedDangerWhite = isInDanger(board, 'White_King', {row: kingWhiteRow, col: kingWhiteCol});
-      const returnedDangerBlack = isInDanger(board, 'Black_King', {row: kingBlackRow, col: kingBlackCol});
+      const returnedDangerWhite = isInDanger(board, 'White_King', {row: kingWhiteRow, col: kingWhiteCol}, pieceObject);
+      const returnedDangerBlack = isInDanger(board, 'Black_King', {row: kingBlackRow, col: kingBlackCol}, pieceObject);
       
 
       kingWhiteDanger = returnedDangerWhite.inDanger;
@@ -116,6 +124,32 @@ export const handleMovement = (pieceObject: Piece, row: number, col: number,
     //   setWhoGoes(whoGoes === 'White' ? 'Black' : 'White');
       whoGoes = whoGoes === 'White' ? 'Black' : 'White';
 
+
+      const {isCastling} = caseCastling(board, draggedPiece.piece,
+        {row: draggedPiece.row, col: draggedPiece.col},
+        {row, col}, pieceObject);
+  
+      if (isCastling) {
+
+        castlingCounter++;
+        const newBoard = board.slice();
+        newBoard[draggedPiece.row][draggedPiece.col] = '';
+
+        const isMate = isCheckMate(row, col, whoGoes, board, kingWhitePos, kingBlackPos, pieceObject);
+        const isMateResult = isMate[0];
+        const winner = isMate[1];
+
+        //Also, we move the rook:
+        newBoard[5][movToDo.col] = `${pieceColor}_Rook`;
+        newBoard[kingMovTo.row][kingMovTo.col] = draggedPiece.piece;
+
+
+  
+        return { processedBoard: newBoard, isMateResult, winner, castlingCounter, movToDo, kingMovTo };
+      }
+
+      
+  
     //   setStepsCounter(stepsCounter + 1);
       const newBoard = board.slice();
       newBoard[draggedPiece.row][draggedPiece.col] = '';
@@ -123,7 +157,7 @@ export const handleMovement = (pieceObject: Piece, row: number, col: number,
       // setBoard(newBoard);
     //   sendRequestMove(row, col, draggedPiece.piece);
       
-      const isMate = isCheckMate(row, col, whoGoes, board, kingWhitePos, kingBlackPos);
+      const isMate = isCheckMate(row, col, whoGoes, board, kingWhitePos, kingBlackPos, pieceObject);
 
       const isMateResult = isMate[0];
       const winner = isMate[1];
@@ -142,6 +176,6 @@ export const handleMovement = (pieceObject: Piece, row: number, col: number,
       // ///////
 
 
-      return { processedBoard: newBoard, isMateResult, winner };
+      return { processedBoard: newBoard, isMateResult, winner, castlingCounter, movToDo, kingMovTo };
     }
   };

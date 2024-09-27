@@ -1,4 +1,4 @@
-import { Coords } from './Types';
+import { Coords, pieceObjectType } from './Types';
 import {MovementIsValid} from './MovementIsValid';
 
 type PieceWithCoords = {
@@ -13,7 +13,8 @@ type returnedObject = {
   currentKnightPathPieces: PieceWithCoords[];
 }
 
-export const isInDanger = (board: string[][], pieceId:string, currentPosition: Coords):returnedObject => {
+export const isInDanger = (board: string[][], pieceId:string, currentPosition: Coords,
+   draggablePiece: pieceObjectType): returnedObject => {
 
     let inDanger = false;
     const currentRow = currentPosition['row'];
@@ -43,7 +44,7 @@ export const isInDanger = (board: string[][], pieceId:string, currentPosition: C
 
         const isValid = MovementIsValid(board, currentDangerousPiece,
           {row: currentRow+direction, col: currentCol},
-          currentPosition
+          currentPosition, draggablePiece
         )
 
         if (!isValid) {
@@ -85,7 +86,7 @@ export const isInDanger = (board: string[][], pieceId:string, currentPosition: C
 
         const isValid = MovementIsValid(board, currentDangerousPiece,
           {row: currentRow, col: currentCol+direction},
-          currentPosition
+          currentPosition, draggablePiece
         )
 
         if (!isValid) {
@@ -129,7 +130,7 @@ export const isInDanger = (board: string[][], pieceId:string, currentPosition: C
         
         const isValid = MovementIsValid(board, currentDangerousPiece,
           {row: currentRow+directionRow, col: currentCol+directionCol},
-          currentPosition
+          currentPosition, draggablePiece
         )
 
         // if (isValid) {
@@ -180,7 +181,7 @@ export const isInDanger = (board: string[][], pieceId:string, currentPosition: C
 
         const isValid = MovementIsValid(board, currentDangerousPiece,
           {row: currentRow+directionRow, col: currentCol+directionCol},
-          currentPosition
+          currentPosition, draggablePiece
         )
 
         if (!isValid) {

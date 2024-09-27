@@ -10,7 +10,7 @@ interface DangerPiece {
 
   
 export const isCheckMate = (row:number, col:number, whoGoes:string, board: string[][], 
-    kingWhitePos: pieceObject, kingBlackPos: pieceObject) => {
+    kingWhitePos: pieceObject, kingBlackPos: pieceObject, draggablePiece: pieceObject) => {
 
 
     const kingBlackRow = kingBlackPos.row;
@@ -19,8 +19,8 @@ export const isCheckMate = (row:number, col:number, whoGoes:string, board: strin
     const kingWhiteRow = kingWhitePos.row;
     const kingWhiteCol = kingWhitePos.col;
 
-    const objectKingWhite = isInDanger(board, 'White_King', {row: kingWhiteRow, col: kingWhiteCol});
-    const objectKingBlack = isInDanger(board, 'Black_King', {row: kingBlackRow, col: kingBlackCol});
+    const objectKingWhite = isInDanger(board, 'White_King', {row: kingWhiteRow, col: kingWhiteCol}, draggablePiece);
+    const objectKingBlack = isInDanger(board, 'Black_King', {row: kingBlackRow, col: kingBlackCol}, draggablePiece);
 
     const checkIsCheckMate = (row:number, col:number, kingColor:string) => {
 
@@ -58,7 +58,7 @@ export const isCheckMate = (row:number, col:number, whoGoes:string, board: strin
       possibleDangerPieces?.forEach((piece) => {
         
         if (kingColor === 'White') {
-          const validDanger = MovementIsValid(board, piece.piece, piece.position, kingWhitePos) ? true : false;
+          const validDanger = MovementIsValid(board, piece.piece, piece.position, kingWhitePos, draggablePiece) ? true : false;
           
           if (validDanger) {
             actualDangerPieces.push(piece);
@@ -67,7 +67,7 @@ export const isCheckMate = (row:number, col:number, whoGoes:string, board: strin
         }
 
         if (kingColor === 'Black') {
-          const validDanger = MovementIsValid(board, piece.piece, piece.position, kingBlackPos) ? true : false;
+          const validDanger = MovementIsValid(board, piece.piece, piece.position, kingBlackPos, draggablePiece) ? true : false;
 
           if (validDanger) {
             actualDangerPieces.push(piece);
@@ -85,11 +85,11 @@ export const isCheckMate = (row:number, col:number, whoGoes:string, board: strin
           continue;
         }
 
-        if (!MovementIsValid(board, `${kingColor}_King`, {row, col}, possibleMoves[i])) {
+        if (!MovementIsValid(board, `${kingColor}_King`, {row, col}, possibleMoves[i], draggablePiece)) {
           continue;
         }
 
-        const returnedDanger = isInDanger(board, `${kingColor}_King`, possibleMoves[i]);
+        const returnedDanger = isInDanger(board, `${kingColor}_King`, possibleMoves[i], draggablePiece);
         const isDanger = returnedDanger.inDanger;
 
         if (!isDanger) {
@@ -118,7 +118,7 @@ export const isCheckMate = (row:number, col:number, whoGoes:string, board: strin
               //TODO: Refactor this two ifs statements into a more compact one
 
                 const isValid = MovementIsValid(board, piece, {row, col},
-                  {row: actualDangerPiece.position.row, col: actualDangerPiece.position.col});
+                  {row: actualDangerPiece.position.row, col: actualDangerPiece.position.col}, draggablePiece);
 
                 if (isValid) {
                   // dangerousPossibleEatablePieces.push({piece, position: {row, col}});

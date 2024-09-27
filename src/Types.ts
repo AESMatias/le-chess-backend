@@ -3,8 +3,24 @@ export interface Coords {
     col: number;
 }
 
+export type pieceObjectType = {
+    row: number;
+    col: number;
+    piece: string;
+}
+
 export type pieceObject = {
     row: number;
     col: number;
     piece: string;
+}
+
+export interface newRookPosition {
+    row: number;
+    col: number;
+}
+
+export interface newKingPosition {
+    row: number;
+    col: number;
 }
