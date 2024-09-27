@@ -153,6 +153,7 @@ io.on('connection', (socket) => {
     let isMate: boolean = false;
     let movToDoRook: any = null;
     let movToDoKing: any = null;
+    
     const boardWithoutMove = games[firstGameId].board;
     const pieceColor = piece.piece.split('_')[0];
     const whiteCastlingCount = games[firstGameId].currentCastlingWhite;
